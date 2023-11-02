@@ -16,9 +16,13 @@ function main(args)
         "--q"
         default = 0.5
         arg_type = Float64
+        "--r0"
+        # help = "Initial value of r"
+        default = 100
+        arg_type = Int
         "--alpha"
         # help = "Exponent parameter alpha"
-        default = 1.0
+        default = 0.0
         arg_type = Float64
         "--sample"
         # help = "Sample size"
@@ -30,6 +34,7 @@ function main(args)
     T = parsed_args["T"]
     p = parsed_args["p"]
     q = parsed_args["q"]
+    r0 = parsed_args["r0"]
     alpha = parsed_args["alpha"]
     sample = parsed_args["sample"]
 
@@ -38,8 +43,13 @@ function main(args)
     println("T = $(int_to_SI_prefix(T)), p = $(p), q = $(q), alpha = $(alpha), sample = $(int_to_SI_prefix(sample))")
 
     # Run the simulation
-    # Ct = Simulation.simulate_samples(S, T, p, q, alpha)
-    Ct = Simulation.simulate(T, p, q, sample)
+    if alpha == 1.0
+        Ct = Simulation.simulate(T, p, q, sample)
+    elseif alpha == 0.0
+        Ct = Simulation.simulate(T, p, q, r0, sample)
+    else
+        Ct = Simulation.simulate(T, p, q, alpha, sample)
+    end
 
     # Output Z values to CSV
     dir = "data/Ct"
