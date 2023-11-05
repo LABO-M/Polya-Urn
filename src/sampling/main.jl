@@ -22,7 +22,7 @@ function main(args)
         arg_type = Int
         "--alpha"
         # help = "Exponent parameter alpha"
-        default = 0.0
+        default = 0.9
         arg_type = Float64
         "--sample"
         # help = "Sample size"
