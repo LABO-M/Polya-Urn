@@ -22,7 +22,7 @@ function main(args)
         arg_type = Int
         "--alpha"
         # help = "Exponent parameter alpha"
-        default = 0.9
+        default = 0.5
         arg_type = Float64
         "--sample"
         # help = "Sample size"
@@ -48,7 +48,7 @@ function main(args)
     elseif alpha == 0.0
         Ct = Simulation.simulate(T, p, q, r0, sample)
     else
-        Ct = Simulation.simulate(T, p, q, alpha, sample)
+        Ct = Simulation.simulate(T, p, q, r0, alpha, sample)
     end
 
     # Output Z values to CSV

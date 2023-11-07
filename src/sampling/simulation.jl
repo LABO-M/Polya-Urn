@@ -86,7 +86,7 @@ function simulate(T::Int, p::Float64, q::Float64, r0::Int, sample::Int)::Vector{
     return Ct
 end
 
-function simulate(T::Int, p::Float64, q::Float64, alpha::Float64, sample::Int)::Vector{Float64}
+function simulate(T::Int, p::Float64, q::Float64, r0::Int, alpha::Float64, sample::Int)::Vector{Float64}
     # Array to store Z values for each initial value of x1
     Z_by_x1 = zeros(Float64, T, sample, 2)
 
@@ -106,21 +106,38 @@ function simulate(T::Int, p::Float64, q::Float64, alpha::Float64, sample::Int)::
         D[1, :] .= 1.0
         Z[1, :] .= x1
 
+        prev_r = 1.0
+
         for t in 2:T
             next!(progressBar)
-            r_t = t^alpha
+            r_t = t <= r0 ? t : floor(r0 * (t / r0)^alpha)
             decay_factor = exp(-1/r_t)
             decisions = decision_function.(Z[t-1, :], p, q)
             rand_vals = rand.(Float64, sample)
             X[t, :] .= rand_vals .< decisions
 
-            # Compute d_r(s) for all s up to the current time t
-            d_r = exp.(-((0:t-1) ./ r_t)), 1, sample)
+            # Determine if r changed
+            delta_r = prev_r != r_t ? 1 : 0
 
-            # Update S(t) and D(t) based on the decay rates
-            S[t, :] .= vec(sum((X[1:t, :] .* d_r), dims=1))
-            D[t, :] .= vec(sum(d_r, dims=1))
+            # If r did not change, use the efficient update
+            # For t in 2:r0, update without decay
+            if t <= r0
+                S[t, :] = S[t-1, :] .+ X[t, :]
+                D[t, :] = D[t-1, :] .+ 1.0
+                Z[t, :] = S[t, :] ./ D[t, :]
+            elseif delta_r == 0
+                S[t, :] = S[t-1, :] .* decay_factor + X[t, :]
+                D[t, :] = D[t-1, :] .* decay_factor .+ 1.0
+            else
+                # If r changed, recompute d_r and sums
+                d_r = repeat(exp.(-((0:t-1) ./ r_t)), 1, sample)
+
+                # Update S(t) and D(t) based on the decay rates
+                S[t, :] .= vec(sum((X[1:t, :] .* d_r), dims=1))
+                D[t, :] .= vec(sum(d_r, dims=1))
+            end
             Z[t, :] .= S[t, :] ./ D[t, :]
+            prev_r = r_t
         end
 
         Z_by_x1[:, :, x1+1] .= Z
